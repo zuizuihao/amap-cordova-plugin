@@ -11,8 +11,16 @@ AMapPlugin.prototype.call_native = function (name, args, callback) {
   return ret;
 }
 
-AMapPlugin.prototype.init = function () {
-  this.call_native("init", data, null);
+AMapPlugin.prototype.configure = function (apiKey) {
+  this.call_native("configure", apiKey, null);
+}
+
+AMapPlugin.prototype.start = function () {
+  this.call_native("start", [pageName], null);
+}
+
+AMapPlugin.prototype.stop = function () {
+  this.call_native("stop", null);
 }
 
 module.exports = new AMapPlugin(); 
