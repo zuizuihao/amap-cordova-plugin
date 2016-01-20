@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="com.roadshr.phonegap.AMapPlugin"
+        version="0.0.1">
+
+    <name>Amap Plugin</name>
+    <description>Amap for cordova plugin</description>
+    <author>roadshr</author>
+    <keywords>Amap,Geolocation,Roadshr</keywords>
+    <license>Apache 2.0 License</license>
+
+    <preference name="API_KEY" />
+
+    <engines>
+        <engine name="cordova" version=">=3.0"/>
+    </engines>
+
+    <js-module src="www/AMapPlugin.js" name="AMapPlugin">
+            <clobbers target="AMapPlugin"/>
+    </js-module>
+
+    <platform name="ios">
+            <preference name="ios-XCBuildConfiguration-OTHER_LDFLAGS" value=" -ObjC" />
+    
+            <config-file target="*-Info.plist" parent="NSLocationAlwaysUsageDescription">
+                <string>This app requires background location tracking</string>
+            </config-file>
+
+            <config-file target="*-Info.plist" parent="UIBackgroundModes">
+                <array>
+                    <string>location</string>
+                </array>
+            </config-file> 
+            
+            <config-file target="*-Info.plist" parent="／＊">
+                <key>NSAppTransportSecurity</key>
+                <dict>
+                    <key>NSAllowsArbitraryLoads</key>
+                    <true/>
+                </dict>
+            </config-file>
+            
+            <config-file target="config.xml" parent="/*">
+                <feature name="BackgroundGeoLocation">
+                    <param name="ios-package" value="CDVBackgroundGeoLocation"/>
+                </feature>
+            </config-file>
+
+            <header-file src="src/ios/Plugins/AMapPlugin.h"/>
+            <source-file src="src/ios/Plugins/AMapPlugin.m"/>
+           
+            <source-file src="libs/ios/AMapLocationKit.framework" framework="true" />
+            <!--<resource-file src="src/ios/AmapConfig.plist" />-->
+            <framework src="CoreTelephony.framework" weak="true" />
+            <framework src="SystemConfiguration.framework" weak="true" />
+            <framework src="CoreLocation.framework" weak="true" />
+            <framework src="libz.tbd" weak="true" />
+
+            <config-file target="*PushConfig.plist" parent="APP_KEY">
+                <string>$API_KEY</string>
+            </config-file>
+        </platform>
+        
+    <!-- android -->
+    <platform name="android">
+        <hook type="after_plugin_add" src="scripts/android-install.js" />
+        <hook type="after_plugin_install" src="scripts/android-install.js" />
+        <hook type="before_plugin_rm" src="scripts/android-install.js" />
+        <hook type="before_plugin_uninstall" src="scripts/android-install.js" />
+    
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="AMapPlugin">
+                <param name="android-package" value="com.roadshr.phonegap.AMapPlugin"/>
+            </feature>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <!-- Required  一些系统要求的权限，如访问网络等-->
+            <!--用于进行网络定位-->
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"></uses-permission>
+            <!--用于访问GPS定位-->
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
+            <!--获取运营商信息，用于支持提供运营商信息相关的接口-->
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
+            <!--用于访问wifi网络信息，wifi信息会用于进行网络定位-->
+            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"></uses-permission>
+            <!--这个权限用于获取wifi的获取权限，wifi信息会用来进行网络定位-->
+            <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"></uses-permission>
+            <!--用于访问网络，网络定位需要上网-->
+            <uses-permission android:name="android.permission.INTERNET"></uses-permission>
+            <!--用于读取手机当前的状态-->
+            <uses-permission android:name="android.permission.READ_PHONE_STATE"></uses-permission>
+            <!--写入扩展存储，向扩展卡写入数据，用于写入缓存定位数据-->
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="com.amap.api.location.APSService"></service>
+            <meta-data android:name="com.amap.api.v2.apikey" android:value="key">$API_KEY</meta-data>
+        </config-file>
+        <source-file src="libs/AMap_Location_v2.3.0_20160112.jar" target-dir="libs"/>
+    </platform>
+</plugin>
