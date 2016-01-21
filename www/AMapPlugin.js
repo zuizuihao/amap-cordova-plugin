@@ -12,15 +12,19 @@ AMapPlugin.prototype.call_native = function (name, args, callback) {
 }
 
 AMapPlugin.prototype.configure = function (apiKey) {
-  this.call_native("configure", apiKey, null);
+  this.call_native("configure", [apiKey], null);
 }
 
 AMapPlugin.prototype.start = function () {
-  this.call_native("start", [pageName], null);
+  this.call_native("start", [], null);
 }
 
 AMapPlugin.prototype.stop = function () {
-  this.call_native("stop", null);
+  this.call_native("stop", [], null);
+}
+
+AMapPlugin.prototype.getLocationLocationWithReGeocode = function (callback) {
+  this.call_native("getLocationLocationWithReGeocode", [], callback);
 }
 
 module.exports = new AMapPlugin(); 

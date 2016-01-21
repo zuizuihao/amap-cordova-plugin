@@ -1,5 +1,4 @@
 #import "AMapPlugin.h"
-#import <MAMapKit/MAMapKit.h>
 #import <AMapLocationKit/AMapLocationKit.h>
 #import <UIKit/UIKit.h>
 
@@ -15,13 +14,14 @@
  */
 - (void) configure:(CDVInvokedUrlCommand*)command
 {
-    [AMapLocationServices sharedServices].apiKey = [[command.arguments objectAtIndex: 0] stringValue];
+    [AMapLocationServices sharedServices].apiKey = [command.arguments objectAtIndex: 0];
     // background location cache, for when no network is detected.
-    self.locationManager = [[AMapLocationManager alloc] init];
-    self.locationManager.delegate = self;
+    locationManager = [[AMapLocationManager alloc] init];
+    locationManager.delegate = self;
+    locationManager.distanceFilter = 10;
     //设置允许后台定位参数，保持不会被系统挂起
-    [self.locationManager setPausesLocationUpdatesAutomatically:NO];
-    [self.locationManager setAllowsBackgroundLocationUpdates:YES];//iOS9(含)以上系统需设置
+    [locationManager setPausesLocationUpdatesAutomatically:NO];
+    [locationManager setAllowsBackgroundLocationUpdates:YES];//iOS9(含)以上系统需设置
     
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
@@ -30,7 +30,7 @@
 - (void) start:(CDVInvokedUrlCommand*)command
 {
     NSLog(@"- AMap start");
-    [self.locationManager startUpdatingLocation];
+    [locationManager startUpdatingLocation];
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
@@ -41,48 +41,69 @@
 - (void) stop:(CDVInvokedUrlCommand*)command
 {
     NSLog(@"- AMap stop");
-    [self.locationManager stopUpdatingLocation];
+    [locationManager stopUpdatingLocation];
     CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
 
-- (void)amapLocationManager:(MALocationManager *)manager didUpdateLocation:(CLLocation *)location
+- (void)amapLocationManager:(AMapLocationManager *)manager didUpdateLocation:(CLLocation *)location
 {
     NSLog(@"location:{lat:%f; lon:%f; accuracy:%f}", location.coordinate.latitude, location.coordinate.longitude, location.horizontalAccuracy);
+    NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];
+    [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"lat"];
+    [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"lon"];
+    [dict setObject: [NSNumber numberWithFloat: location.horizontalAccuracy] forKey:@"accuracy"];
+    
+    NSError  *error;
+    
+    NSData   *jsonData   = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
+    NSString *jsonString = [[NSString alloc]initWithData:jsonData encoding:NSUTF8StringEncoding];
+    
     dispatch_async(dispatch_get_main_queue(), ^{
-                        [self.commandDelegate evalJs:[NSString stringWithFormat:@"cordova.fireDocumentEvent('AMap.updateLocation',%@)",location]];
+        [self.commandDelegate evalJs:[NSString stringWithFormat:@"cordova.fireDocumentEvent('AMap.updateLocation',%@)",jsonString]];
     });
 }
 
 - (void) getLocationLocationWithReGeocode:(CDVInvokedUrlCommand *)command
 {
-  // 带逆地理（返回坐标和地址信息）
-    [self.locationManager requestLocationWithReGeocode:YES completionBlock:^(CLLocation *location, AMapLocationReGeocode *regeocode, NSError *error) {
-          // Build a resultset for javascript callback.
-          CDVPluginResult* result = nil; 
-          if (error)
-          {
-              NSLog(@"locError:{%ld - %@};", (long)error.code, error.localizedDescription);
-              result = [self pluginResultForValue : error];
-              if (error.code == AMapLocatingErrorLocateFailed)
-              {
-                  return;
-              }
-          }
-          
-          NSLog(@"location:%@", location);
-          result = [self pluginResultForValue:location];
-          if (regeocode)
-          {
-              NSLog(@"reGeocode:%@", regeocode);
-          }
-          
-          if (result) {
-            [self succeedWithPluginResult:pushResult withCallbackID:command.callbackId];
-          } else {
+    // 带逆地理信息的一次定位（返回坐标和地址信息）
+    [locationManager setDesiredAccuracy:kCLLocationAccuracyHundredMeters];
+    
+    // 带逆地理（返回坐标和地址信息）
+    [locationManager requestLocationWithReGeocode:YES completionBlock:^(CLLocation *location, AMapLocationReGeocode *regeocode, NSError *error) {
+        // Build a resultset for javascript callback.
+        CDVPluginResult* result = nil;
+        if (error)
+        {
+            NSLog(@"locError:{%ld - %@};", (long)error.code, error.localizedDescription);
+            result = [self pluginResultForValue : error];
+            if (error.code == AMapLocationErrorLocateFailed)
+            {
+                return;
+            }
+        }
+        
+        NSLog(@"getLocationLocationWithReGeocode: %@", location);
+        result = [self pluginResultForValue:location];
+        if (regeocode)
+        {
+            NSLog(@"reGeocode:%@", regeocode);
+        }
+        
+        if (result) {
+            [self succeedWithPluginResult:result withCallbackID:command.callbackId];
+        } else {
             [self failWithCallbackID:command.callbackId];
-          }
+        }
     }];
+}
+
+-(void)failWithCallbackID:(NSString *)callbackID {
+    CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+    [self.commandDelegate sendPluginResult:result callbackId:callbackID];
+}
+- (void)succeedWithPluginResult:(CDVPluginResult *)result withCallbackID:(NSString *)callbackID {
+    [self.commandDelegate sendPluginResult:result callbackId:callbackID];
 }
 
 - (CDVPluginResult *)pluginResultForValue:(id)value {
