@@ -94,12 +94,14 @@
                 [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"lon"];
                 [dict setObject: [NSNumber numberWithFloat: location.horizontalAccuracy] forKey:@"accuracy"];
                 if(regeocode){
-                    [dict setObject: regeocode.province forKey:@"province"];
-                    [dict setObject: regeocode.city forKey:@"city"];
-                    [dict setObject: regeocode.district forKey:@"district"];
-                    [dict setObject: regeocode.township forKey:@"township"];
-                    [dict setObject: regeocode.street forKey:@"street"];
-                    [dict setObject: regeocode.formattedAddress forKey:@"formattedAddress"];
+                    if(regeocode.province){
+                      [dict setObject: regeocode.province forKey:@"province"];
+                      [dict setObject: regeocode.city forKey:@"city"];
+                      [dict setObject: regeocode.district forKey:@"district"];
+                      [dict setObject: regeocode.township forKey:@"township"];
+                      [dict setObject: regeocode.street forKey:@"street"];
+                      [dict setObject: regeocode.formattedAddress forKey:@"formattedAddress"];
+                    }
                 }
                 result = [self pluginResultForValue: dict];
                 [self succeedWithPluginResult:result withCallbackID:command.callbackId];

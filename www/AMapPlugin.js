@@ -3,7 +3,7 @@ var AMapPlugin = function () {
 };
 
 AMapPlugin.prototype.call_native = function (name, args, callback, error_callback) {
-  var ret = cordova.exec(callback, this.error_callback, 'AMapPlugin', name, args);
+  var ret = cordova.exec(callback, error_callback, 'AMapPlugin', name, args);
   return ret;
 }
 

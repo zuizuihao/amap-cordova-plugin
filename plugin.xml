@@ -53,11 +53,6 @@
             <framework src="SystemConfiguration.framework" weak="true" />
             <framework src="CoreLocation.framework" weak="true" />
             <framework src="libz.tbd" weak="true" />
-            <framework src="libz.dylib" weak="true" />
-
-            <!--<config-file target="*PushConfig.plist" parent="APP_KEY">
-                <string>$API_KEY</string>
-            </config-file>-->
         </platform>
         
     <!-- android -->
@@ -92,10 +87,6 @@
             <!--写入扩展存储，向扩展卡写入数据，用于写入缓存定位数据-->
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
         </config-file>
-        <!--<config-file target="AndroidManifest.xml" parent="/manifest/application">
-            <service android:name="com.amap.api.location.APSService"></service>
-            <meta-data android:name="com.amap.api.v2.apikey" android:value="key">$API_KEY</meta-data>
-        </config-file>-->
         <source-file src="libs/android/AMap_Location_v2.3.0_20160112.jar" target-dir="libs"/>
     </platform>
 </plugin>
