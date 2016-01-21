@@ -17,6 +17,6 @@
 - (void) configure:(CDVInvokedUrlCommand*)command;
 - (void) start:(CDVInvokedUrlCommand*)command;
 - (void) stop:(CDVInvokedUrlCommand*)command;
-- (void) getLocationLocationWithReGeocode:(CDVInvokedUrlCommand *)command;
+- (void) getLocationWithReGeocode:(CDVInvokedUrlCommand *)command;
 
 @end

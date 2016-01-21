@@ -14,25 +14,33 @@
  */
 - (void) configure:(CDVInvokedUrlCommand*)command
 {
-    [AMapLocationServices sharedServices].apiKey = [command.arguments objectAtIndex: 0];
-    // background location cache, for when no network is detected.
-    locationManager = [[AMapLocationManager alloc] init];
-    locationManager.delegate = self;
-    locationManager.distanceFilter = 10;
-    //设置允许后台定位参数，保持不会被系统挂起
-    [locationManager setPausesLocationUpdatesAutomatically:NO];
-    [locationManager setAllowsBackgroundLocationUpdates:YES];//iOS9(含)以上系统需设置
+    [self.commandDelegate runInBackground:^{
+        NSLog(@"- AMap configure");
+        [AMapLocationServices sharedServices].apiKey = [command.arguments objectAtIndex: 0];
+        // background location cache, for when no network is detected.
+        locationManager = [[AMapLocationManager alloc] init];
+        locationManager.delegate = self;
+        //设定定位的最小更新距离，默认为 kCLDistanceFilterNone 。
+        locationManager.distanceFilter = [[command.arguments objectAtIndex: 1] intValue];
+        // 带逆地理信息的一次定位（返回坐标和地址信息）
+        [locationManager setDesiredAccuracy:kCLLocationAccuracyHundredMeters];
+        //设置允许后台定位参数，保持不会被系统挂起
+        [locationManager setPausesLocationUpdatesAutomatically:NO];
+        [locationManager setAllowsBackgroundLocationUpdates:YES];//iOS9(含)以上系统需设置
     
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }];
 }
 
 - (void) start:(CDVInvokedUrlCommand*)command
 {
-    NSLog(@"- AMap start");
-    [locationManager startUpdatingLocation];
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    [self.commandDelegate runInBackground:^ {
+        NSLog(@"- AMap start");
+        [locationManager startUpdatingLocation];
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }];
 }
 
 /**
@@ -40,15 +48,17 @@
  */
 - (void) stop:(CDVInvokedUrlCommand*)command
 {
-    NSLog(@"- AMap stop");
-    [locationManager stopUpdatingLocation];
-    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    [self.commandDelegate runInBackground:^ {
+        NSLog(@"- AMap stop");
+        [locationManager stopUpdatingLocation];
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+    }];
 }
 
 - (void)amapLocationManager:(AMapLocationManager *)manager didUpdateLocation:(CLLocation *)location
 {
-    NSLog(@"location:{lat:%f; lon:%f; accuracy:%f}", location.coordinate.latitude, location.coordinate.longitude, location.horizontalAccuracy);
+    //NSLog(@"location:{lat:%f; lon:%f; accuracy:%f}", location.coordinate.latitude, location.coordinate.longitude, location.horizontalAccuracy);
     NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];
     [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"lat"];
     [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"lon"];
@@ -64,38 +74,37 @@
     });
 }
 
-- (void) getLocationLocationWithReGeocode:(CDVInvokedUrlCommand *)command
+- (void) getLocationWithReGeocode:(CDVInvokedUrlCommand *)command
 {
-    // 带逆地理信息的一次定位（返回坐标和地址信息）
-    [locationManager setDesiredAccuracy:kCLLocationAccuracyHundredMeters];
-    
-    // 带逆地理（返回坐标和地址信息）
-    [locationManager requestLocationWithReGeocode:YES completionBlock:^(CLLocation *location, AMapLocationReGeocode *regeocode, NSError *error) {
-        // Build a resultset for javascript callback.
-        CDVPluginResult* result = nil;
-        if (error)
-        {
-            NSLog(@"locError:{%ld - %@};", (long)error.code, error.localizedDescription);
-            result = [self pluginResultForValue : error];
-            if (error.code == AMapLocationErrorLocateFailed)
-            {
-                return;
-            }
-        }
-        
-        NSLog(@"getLocationLocationWithReGeocode: %@", location);
-        result = [self pluginResultForValue:location];
-        if (regeocode)
-        {
-            NSLog(@"reGeocode:%@", regeocode);
-        }
-        
-        if (result) {
-            [self succeedWithPluginResult:result withCallbackID:command.callbackId];
-        } else {
-            [self failWithCallbackID:command.callbackId];
-        }
-    }];
+        [self.commandDelegate runInBackground:^ {
+            NSLog(@"- AMap getLocationWithReGeocode");
+            // 带逆地理（返回坐标和地址信息）
+            [locationManager requestLocationWithReGeocode:YES completionBlock:^(CLLocation *location, AMapLocationReGeocode *regeocode, NSError *error) {
+                NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];
+                // Build a resultset for javascript callback.
+                CDVPluginResult* result = nil;
+                if (error)
+                {
+                    NSLog(@"locError:{%ld - %@};", (long)error.code, error.localizedDescription);
+                    [self failWithCallbackID:command.callbackId];
+                    return ;
+                }
+                
+                [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"lat"];
+                [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"lon"];
+                [dict setObject: [NSNumber numberWithFloat: location.horizontalAccuracy] forKey:@"accuracy"];
+                if(regeocode){
+                    [dict setObject: regeocode.province forKey:@"province"];
+                    [dict setObject: regeocode.city forKey:@"city"];
+                    [dict setObject: regeocode.district forKey:@"district"];
+                    [dict setObject: regeocode.township forKey:@"township"];
+                    [dict setObject: regeocode.street forKey:@"street"];
+                    [dict setObject: regeocode.formattedAddress forKey:@"formattedAddress"];
+                }
+                result = [self pluginResultForValue: dict];
+                [self succeedWithPluginResult:result withCallbackID:command.callbackId];
+            }];
+        }];
 }
 
 -(void)failWithCallbackID:(NSString *)callbackID {

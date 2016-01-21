@@ -2,29 +2,25 @@
 var AMapPlugin = function () {
 };
 
-AMapPlugin.prototype.error_callback = function (msg) {
-  console.log("Javascript Callback Error: " + msg)
-}
-
-AMapPlugin.prototype.call_native = function (name, args, callback) {
+AMapPlugin.prototype.call_native = function (name, args, callback, error_callback) {
   var ret = cordova.exec(callback, this.error_callback, 'AMapPlugin', name, args);
   return ret;
 }
 
-AMapPlugin.prototype.configure = function (apiKey) {
-  this.call_native("configure", [apiKey], null);
+AMapPlugin.prototype.configure = function (apiKey, distanceFilter, callback, error_callback) {
+  this.call_native("configure", [apiKey, distanceFilter], callback, error_callback);
 }
 
-AMapPlugin.prototype.start = function () {
-  this.call_native("start", [], null);
+AMapPlugin.prototype.start = function (callback, error_callback) {
+  this.call_native("start", [], callback, error_callback);
 }
 
-AMapPlugin.prototype.stop = function () {
-  this.call_native("stop", [], null);
+AMapPlugin.prototype.stop = function (callback, error_callback) {
+  this.call_native("stop", [], callback, error_callback);
 }
 
-AMapPlugin.prototype.getLocationLocationWithReGeocode = function (callback) {
-  this.call_native("getLocationLocationWithReGeocode", [], callback);
+AMapPlugin.prototype.getLocationWithReGeocode = function (callback, error_callback) {
+  this.call_native("getLocationWithReGeocode", [], callback, error_callback);
 }
 
 module.exports = new AMapPlugin(); 
