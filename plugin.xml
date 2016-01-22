@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
-        id="com.roadshr.cordova.AMapPlugin"
+        id="com.roadshr.cordova.amap"
         version="0.0.1">
 
     <name>Amap Plugin</name>
@@ -70,7 +70,7 @@
     
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="AMapPlugin">
-                <param name="android-package" value="com.roadshr.phonegap.AMapPlugin"/>
+                <param name="android-package" value="com.roadshr.cordova.amap.AMapPlugin"/>
             </feature>
         </config-file>
 
@@ -93,6 +93,12 @@
             <!--写入扩展存储，向扩展卡写入数据，用于写入缓存定位数据-->
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
         </config-file>
+        
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="com.amap.api.location.APSService"></service>
+        </config-file>
+        
+        <framework src="com.android.support:support-v4:+" />
         <source-file src="libs/android/AMap_Location_v2.3.0_20160112.jar" target-dir="libs"/>
     </platform>
 </plugin>

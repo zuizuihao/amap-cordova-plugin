@@ -11,11 +11,19 @@ import org.apache.cordova.LOG;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
-import com.amap.api.location;
+import org.json.JSONObject;
+import android.util.Log;
+
+import com.amap.api.location.AMapLocation;
+import com.amap.api.location.AMapLocationClient;
+import com.amap.api.location.AMapLocationClientOption;
+import com.amap.api.location.AMapLocationClientOption.AMapLocationMode;
+import com.amap.api.location.AMapLocationListener;
 
 public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
+	  private static final JPushPlugin instance;
     /** LOG TAG */
-    private static final String LOG_TAG = AMapPlugin.class.getSimpleName();
+    private static final String TAG = AMapPlugin.class.getSimpleName();
 
 	  /** JS回调接口对象 */
     public static CallbackContext updateLocationCallbackContext = null;
@@ -23,13 +31,17 @@ public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
     public AMapLocationClient mLocationClient = null;
     //声明mLocationOption对象
     public AMapLocationClientOption mLocationOption = null;
-  
+    
+    public AMapPlugin() {
+		    instance = this;
+	  }
+
     /**
      * 插件初始化
      */
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
-    	LOG.d(LOG_TAG, "AMapPlugin#initialize");
+    	LOG.d(TAG, "AMapPlugin#initialize");
 
         super.initialize(cordova, webView);
     }
@@ -38,119 +50,160 @@ public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
      * 插件主入口
      */
     @Override
-    public boolean execute(String action, final JSONArray args, CallbackContext callbackContext) throws JSONException {
-    	LOG.d(LOG_TAG, "AMapPlugin#execute");
+    public boolean execute(final String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    	LOG.d(TAG, "AMapPlugin#execute");
 
     	boolean ret = false;
-        
-        if ("configure".equalsIgnoreCase(action)) {
-            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-            pluginResult.setKeepCallback(true);
-            callbackContext.sendPluginResult(pluginResult);
-          
+      if ("configure".equalsIgnoreCase(action)) {
             final String apiKey = args.getString(0);
+            final long interval = args.getLong(1);
+            
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
-                	LOG.d(LOG_TAG, "AMapPlugin#configure");
-                    AmapLocationClient.setApiKey(apiKey);
-                }
-            });
-            ret =  true;
-        }if ("start".equalsIgnoreCase(action)) {
-            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-            pluginResult.setKeepCallback(true);
-            callbackContext.sendPluginResult(pluginResult);
-          
-            cordova.getThreadPool().execute(new Runnable() {
-                public void run() {
-                	LOG.d(LOG_TAG, "AMapPlugin#start");
+                  AMapLocationClient.setApiKey(apiKey);
                   //初始化定位
-                  mLocationClient = new AMapLocationClient(getApplicationContext());
+                  mLocationClient = new AMapLocationClient(cordova.getActivity().getApplicationContext());
                   //设置定位回调监听
-                  mlocationClient.setLocationListener(this);
-                  
+                  mLocationClient.setLocationListener(instance);
                   //初始化定位参数
                   mLocationOption = new AMapLocationClientOption();
                   //设置定位模式为高精度模式，Battery_Saving为低功耗模式，Device_Sensors是仅设备模式
                   mLocationOption.setLocationMode(AMapLocationMode.Battery_Saving);
                   //设置是否返回地址信息（默认返回地址信息）
                   mLocationOption.setNeedAddress(true);
-                  //设置是否只定位一次,默认为false
-                  mLocationOption.setOnceLocation(false);
                   //设置是否强制刷新WIFI，默认为强制刷新
                   mLocationOption.setWifiActiveScan(true);
                   //设置是否允许模拟位置,默认为false，不允许模拟位置
                   mLocationOption.setMockEnable(false);
                   //设置定位间隔,单位毫秒,默认为2000ms
-                  mLocationOption.setInterval(2000);
+                  mLocationOption.setInterval(interval);
                   //给定位客户端对象设置定位参数
-                  mlocationClient.setLocationOption(mLocationOption);
+                  mLocationClient.setLocationOption(mLocationOption);
+                  
+                  PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+                  pluginResult.setKeepCallback(false);
+                  callbackContext.sendPluginResult(pluginResult);
+                  LOG.d(TAG, "AMapPlugin#configure");
+                }
+            });
+            ret =  true;
+        }if ("start".equalsIgnoreCase(action)) {
+            updateLocationCallbackContext = callbackContext;
+            cordova.getThreadPool().execute(new Runnable() {
+                public void run() {
+                	LOG.d(TAG, "AMapPlugin#start");
+                  //设置是否只定位一次,默认为false
+                  mLocationOption.setOnceLocation(false);
                   //启动定位
-                  mlocationClient.startLocation();
+                  mLocationClient.startLocation();
+
+                  PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+                  pluginResult.setKeepCallback(true);
+                  updateLocationCallbackContext.sendPluginResult(pluginResult);
                 }
             });
             ret =  true;
         } else if ("stop".equalsIgnoreCase(action)){
-            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-            pluginResult.setKeepCallback(true);
-            callbackContext.sendPluginResult(pluginResult);
-            
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
-                	LOG.d(LOG_TAG, "AMapPlugin#stop");
-                    PushManager.stopWork(cordova.getActivity().getApplicationContext());
+                	LOG.d(TAG, "AMapPlugin#stop");
+                  mLocationClient.stopLocation();
+                  
+                  PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+                  pluginResult.setKeepCallback(false);
+                  callbackContext.sendPluginResult(pluginResult);
                 }
             });
             ret =  true;
-        } else if ("getLocationLocationWithReGeocode".equalsIgnoreCase(action)) {
+        } else if ("getLocationWithReGeocode".equalsIgnoreCase(action)) {
             updateLocationCallbackContext = callbackContext;
-            
             PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
             pluginResult.setKeepCallback(true);
             callbackContext.sendPluginResult(pluginResult);
+            
+            //设置是否只定位一次,默认为false
+            mLocationOption.setOnceLocation(true);
+            //启动定位
+            mLocationClient.startLocation();
             ret = true;
         }
-
         return ret;
     }
     
-    // 定位监听
+     // 定位监听
 	  @Override
-    public void onLocationChanged(AMapLocation amapLocation) {
-            PluginResult result = null;
-            if (amapLocation != null) {
-                if (amapLocation.getErrorCode() == 0) {
-                //定位成功回调信息，设置相关消息
-                amapLocation.getLocationType();//获取当前定位结果来源，如网络定位结果，详见定位类型表
-                amapLocation.getLatitude();//获取纬度
-                amapLocation.getLongitude();//获取经度
-                amapLocation.getAccuracy();//获取精度信息
-                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date date = new Date(amapLocation.getTime());
-                df.format(date);//定位时间
-                amapLocation.getAddress();//地址，如果option中设置isNeedAddress为false，则没有此结果，网络定位结果中会有地址信息，GPS定位不返回地址信息。
-                amapLocation.getCountry();//国家信息
-                amapLocation.getProvince();//省信息
-                amapLocation.getCity();//城市信息
-                amapLocation.getDistrict();//城区信息
-                amapLocation.getStreet();//街道信息
-                        amapLocation.getStreetNum();//街道门牌号信息
-                amapLocation.getCityCode();//城市编码
-                amapLocation.getAdCode();//地区编码
-                
-                result = new PluginResult(PluginResult.Status.OK, amapLocation);
-            } else {
-                      //显示错误信息ErrCode是错误码，errInfo是错误信息，详见错误码表。
-                Log.e("AmapError","location Error, ErrCode:"
-                    + amapLocation.getErrorCode() + ", errInfo:"
-                    + amapLocation.getErrorInfo());
-                }
-                result = new PluginResult(PluginResult.Status.ERROR, amapLocation);
-            }
-            
-            if (updateLocationCallbackContext != null) {
-                  updateLocationCallbackContext.sendPluginResult(result);
-            }
-      }
+    public void onLocationChanged(AMapLocation location) {
+      try{
+          JSONObject data = new JSONObject();
+          if (location != null) {
+              if (location.getErrorCode() == 0) {
+                  String address = String.format("%s%s%s%s",location.getProvince(),location.getCity()
+                                ,location.getDistrict(),location.getStreet()); 
+                  setStringData(data, "latitude", String.valueOf(location.getLatitude()));
+                  setStringData(data, "longitude", String.valueOf(location.getLongitude()));
+                  setStringData(data, "address", address);
+                  sendSuccessData(updateLocationCallbackContext, data, true);
+              } else {
+                  //显示错误信息ErrCode是错误码，errInfo是错误信息，详见错误码表。
+                  Log.e("AmapError","location Error, ErrCode:"
+                      + location.getErrorCode() + ", errInfo:"
+                      + location.getErrorInfo());
+                  setStringData(data, "errCode", String.valueOf(location.getErrorCode()));
+                  setStringData(data, "errInfo", location.getErrorInfo());
+                  sendErrorData(updateLocationCallbackContext, data, true);
+              }
+              
+              String js = String.format("AMap.updateLocation('%s');",data.toString());
+              instance.webView.sendJavascript(js);
+          }
+        } catch (JSONException e) {
+           LOG.e(TAG, e.toString());
+		    }catch (NullPointerException e) {
+          
+        } catch (Exception e) {}
+    }
+    
+    /**
+     * 设定字符串类型JSON对象，如值为空时不设定
+     * 
+     * @param jsonObject JSON对象
+     * @param name 关键字
+     * @param value 值
+     * @throws JSONException JSON异常
+     */
+    private void setStringData(JSONObject jsonObject, String name, String value) throws JSONException {
+    	if (value != null && !"".equals(value)) {
+    		jsonObject.put(name, value);
+    	}
+    }
+    
+    /**
+     * 接收推送成功内容并返回给前端JS
+     * 
+     * @param jsonObject JSON对象
+     */
+    private void sendSuccessData(CallbackContext callbackContext, JSONObject jsonObject, boolean isCallBackKeep) {
+        Log.d(TAG, "BaiduPushReceiver#sendSuccessData: " + (jsonObject != null ? jsonObject.toString() : "null"));
 
+        if (callbackContext != null) {
+            PluginResult result = new PluginResult(PluginResult.Status.OK, jsonObject);
+            result.setKeepCallback(isCallBackKeep);
+            callbackContext.sendPluginResult(result);
+        }
+    }
+    
+    /**
+     * 接收推送失败内容并返回给前端JS
+     * 
+     * @param jsonObject JSON对象
+     */
+    private void sendErrorData(CallbackContext callbackContext, JSONObject jsonObject, boolean isCallBackKeep) {
+        Log.d(TAG, "BaiduPushReceiver#sendErrorData: " + (jsonObject != null ? jsonObject.toString() : "null"));
+
+        if (callbackContext != null) {
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR, jsonObject);
+            result.setKeepCallback(false);
+            callbackContext.sendPluginResult(result);
+        }
+    }
 }

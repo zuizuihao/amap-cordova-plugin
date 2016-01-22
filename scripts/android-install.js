@@ -21,8 +21,8 @@ module.exports = function (context) {
         console.info("Android platform has not been added.");
         return ;
     }
-
-    var targetDir  = path.join(projectRoot, "platforms", "android", "src", "cn", "jpush", "phonegap");
+    
+    var targetDir  = path.join(projectRoot, "platforms", "android", "src", "com", "roadshr", "cordova", "amap");
     var targetFile = path.join(targetDir, "AMapPlugin.java");
         console.log(targetDir);
 
