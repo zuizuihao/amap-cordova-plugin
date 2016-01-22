@@ -21,7 +21,7 @@ import com.amap.api.location.AMapLocationClientOption.AMapLocationMode;
 import com.amap.api.location.AMapLocationListener;
 
 public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
-	  private static final JPushPlugin instance;
+	  private static AMapPlugin instance;
     /** LOG TAG */
     private static final String TAG = AMapPlugin.class.getSimpleName();
 
@@ -152,9 +152,6 @@ public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
                   setStringData(data, "errInfo", location.getErrorInfo());
                   sendErrorData(updateLocationCallbackContext, data, true);
               }
-              
-              String js = String.format("AMap.updateLocation('%s');",data.toString());
-              instance.webView.sendJavascript(js);
           }
         } catch (JSONException e) {
            LOG.e(TAG, e.toString());
