@@ -1,0 +1,33 @@
+{
+  "name": "com.roadshr.cordova.amapplugin",
+  "description": "Cordova plugin for Amap",
+  "version": "0.0.2",
+  "homepage": "https://github.com/zuizuihao/amap-cordova-plugin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/zuizuihao/amap-cordova-plugin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zuizuihao/amap-cordova-plugin/issues"
+  },
+  "cordova": {
+    "id": "com.roadshr.cordova.AMapPlugin",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  },
+  "keywords": [
+    "Amap",
+    "Geolocation",
+    "Roadshr"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=3.0.0"
+    }
+  ],
+  "author": "Roadshr team",
+  "license": "APL"
+}
