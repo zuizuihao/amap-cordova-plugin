@@ -139,17 +139,17 @@ public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
               if (location.getErrorCode() == 0) {
                   String address = String.format("%s%s%s%s",location.getProvince(),location.getCity()
                                 ,location.getDistrict(),location.getStreet()); 
-                  setStringData(data, "latitude", String.valueOf(location.getLatitude()));
-                  setStringData(data, "longitude", String.valueOf(location.getLongitude()));
-                  setStringData(data, "address", address);
+                  data.put("latitude", location.getLatitude());
+                  data.put("longitude", location.getLongitude());
+                  data.put("address", address);
                   sendSuccessData(updateLocationCallbackContext, data, true);
               } else {
                   //显示错误信息ErrCode是错误码，errInfo是错误信息，详见错误码表。
                   Log.e("AmapError","location Error, ErrCode:"
                       + location.getErrorCode() + ", errInfo:"
                       + location.getErrorInfo());
-                  setStringData(data, "errCode", String.valueOf(location.getErrorCode()));
-                  setStringData(data, "errInfo", location.getErrorInfo());
+                  data.put("errCode", location.getErrorCode());
+                  data.put("errInfo", location.getErrorInfo());
                   sendErrorData(updateLocationCallbackContext, data, true);
               }
           }
@@ -158,20 +158,6 @@ public class AMapPlugin extends CordovaPlugin implements AMapLocationListener{
 		    }catch (NullPointerException e) {
           
         } catch (Exception e) {}
-    }
-    
-    /**
-     * 设定字符串类型JSON对象，如值为空时不设定
-     * 
-     * @param jsonObject JSON对象
-     * @param name 关键字
-     * @param value 值
-     * @throws JSONException JSON异常
-     */
-    private void setStringData(JSONObject jsonObject, String name, String value) throws JSONException {
-    	if (value != null && !"".equals(value)) {
-    		jsonObject.put(name, value);
-    	}
     }
     
     /**
