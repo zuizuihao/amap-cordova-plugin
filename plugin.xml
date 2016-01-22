@@ -38,6 +38,12 @@
                 </dict>
             </config-file>
             
+            <config-file target="*-Info.plist" parent="LSApplicationQueriesSchemes">
+                <array>
+                    <string>iosamap</string>
+                </array>
+            </config-file>
+            
             <config-file target="config.xml" parent="/*">
                 <feature name="AMapPlugin">
                     <param name="ios-package" value="AMapPlugin"/>

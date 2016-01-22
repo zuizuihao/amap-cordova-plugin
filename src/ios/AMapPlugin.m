@@ -60,8 +60,8 @@
 {
     //NSLog(@"location:{lat:%f; lon:%f; accuracy:%f}", location.coordinate.latitude, location.coordinate.longitude, location.horizontalAccuracy);
     NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];
-    [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"lat"];
-    [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"lon"];
+    [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"latitude"];
+    [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"longitude"];
     [dict setObject: [NSNumber numberWithFloat: location.horizontalAccuracy] forKey:@"accuracy"];
     
     NSError  *error;
@@ -90,17 +90,12 @@
                     return ;
                 }
                 
-                [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"lat"];
-                [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"lon"];
-                [dict setObject: [NSNumber numberWithFloat: location.horizontalAccuracy] forKey:@"accuracy"];
+                [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"latitude"];
+                [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"longitude"];
                 if(regeocode){
                     if(regeocode.province){
-                      [dict setObject: regeocode.province forKey:@"province"];
-                      [dict setObject: regeocode.city forKey:@"city"];
-                      [dict setObject: regeocode.district forKey:@"district"];
-                      [dict setObject: regeocode.township forKey:@"township"];
-                      [dict setObject: regeocode.street forKey:@"street"];
-                      [dict setObject: regeocode.formattedAddress forKey:@"formattedAddress"];
+                      NSString *address = [NSString stringWithFormat:@"%@%@%@%@",regeocode.province, regeocode.city, regeocode.district, regeocode.township];
+                      [dict setObject: address forKey:@"address"];
                     }
                 }
                 result = [self pluginResultForValue: dict];
