@@ -1,7 +1,7 @@
 {
   "name": "com.roadshr.cordova.amapplugin",
   "description": "Cordova plugin for Amap",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://github.com/zuizuihao/amap-cordova-plugin#readme",
   "repository": {
     "type": "git",

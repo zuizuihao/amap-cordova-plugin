@@ -1,9 +1,11 @@
 #import "AMapPlugin.h"
+#import <AMapSearchKit/AMapSearchKit.h>
 #import <AMapLocationKit/AMapLocationKit.h>
 #import <UIKit/UIKit.h>
 
 @implementation AMapPlugin {
     AMapLocationManager *locationManager;
+    AMapSearchAPI *searchAPI;
 }
 
 /**
@@ -15,8 +17,13 @@
 - (void) configure:(CDVInvokedUrlCommand*)command
 {
     [self.commandDelegate runInBackground:^{
-        NSLog(@"- AMap configure");
-        [AMapLocationServices sharedServices].apiKey = [command.arguments objectAtIndex: 0];
+        NSString * apiKey = [command.arguments objectAtIndex: 0];
+        NSLog(@"- AMap configure %@", apiKey);
+        [AMapLocationServices sharedServices].apiKey = apiKey;
+        [AMapSearchServices sharedServices].apiKey = apiKey;
+
+        searchAPI = [[AMapSearchAPI alloc] init];
+        searchAPI.delegate = self;
         // background location cache, for when no network is detected.
         locationManager = [[AMapLocationManager alloc] init];
         locationManager.delegate = self;
@@ -58,26 +65,46 @@
 
 - (void)amapLocationManager:(AMapLocationManager *)manager didUpdateLocation:(CLLocation *)location
 {
-    //NSLog(@"location:{lat:%f; lon:%f; accuracy:%f}", location.coordinate.latitude, location.coordinate.longitude, location.horizontalAccuracy);
-    NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];
-    [dict setObject: [NSNumber numberWithFloat: location.coordinate.latitude] forKey:@"latitude"];
-    [dict setObject: [NSNumber numberWithFloat: location.coordinate.longitude] forKey:@"longitude"];
-    [dict setObject: [NSNumber numberWithFloat: location.horizontalAccuracy] forKey:@"accuracy"];
-    
-    NSError  *error;
-    
-    NSData   *jsonData   = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
-    NSString *jsonString = [[NSString alloc]initWithData:jsonData encoding:NSUTF8StringEncoding];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.commandDelegate evalJs:[NSString stringWithFormat:@"cordova.fireDocumentEvent('AMap.updateLocation',%@)",jsonString]];
-    });
+    //NSLog(@"Update Location");
+    //构造AMapReGeocodeSearchRequest对象
+    AMapReGeocodeSearchRequest *regeo = [[AMapReGeocodeSearchRequest alloc] init];
+    regeo.location = [AMapGeoPoint locationWithLatitude:location.coordinate.latitude longitude:location.coordinate.longitude];
+    regeo.radius = 10000;
+    regeo.requireExtension = YES;
+
+    //发起逆地理编码
+    [searchAPI AMapReGoecodeSearch: regeo];
+}
+
+- (void)onReGeocodeSearchDone:(AMapReGeocodeSearchRequest *)request response:(AMapReGeocodeSearchResponse *)response
+{
+    if(response.regeocode != nil)
+    {
+        //NSLog(@"ReGeocodeSearch Done");
+        //通过AMapReGeocodeSearchResponse对象处理搜索结果
+        AMapAddressComponent *regeocode = response.regeocode.addressComponent;
+        NSString *address = [NSString stringWithFormat:@"%@%@%@%@",regeocode.province, regeocode.city, regeocode.district, regeocode.township];
+        //NSLog(@"location:{lat:%f; lon:%f; accuracy:%f}", location.coordinate.latitude, location.coordinate.longitude, location.horizontalAccuracy);
+        NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];
+        [dict setObject: [NSNumber numberWithFloat: request.location.latitude] forKey:@"latitude"];
+        [dict setObject: [NSNumber numberWithFloat: request.location.longitude] forKey:@"longitude"];
+        [dict setObject: address forKey:@"address"];
+        
+        NSError  *error;
+        
+        NSData   *jsonData   = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
+        NSString *jsonString = [[NSString alloc]initWithData:jsonData encoding:NSUTF8StringEncoding];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.commandDelegate evalJs:[NSString stringWithFormat:@"cordova.fireDocumentEvent('AMap.updateLocation',%@)",jsonString]];
+        });
+    }
 }
 
 - (void) getLocationWithReGeocode:(CDVInvokedUrlCommand *)command
 {
         [self.commandDelegate runInBackground:^ {
-            NSLog(@"- AMap getLocationWithReGeocode");
+            //NSLog(@"- AMap getLocationWithReGeocode");
             // 带逆地理（返回坐标和地址信息）
             [locationManager requestLocationWithReGeocode:YES completionBlock:^(CLLocation *location, AMapLocationReGeocode *regeocode, NSError *error) {
                 NSMutableDictionary* dict = [NSMutableDictionary dictionaryWithCapacity:2];

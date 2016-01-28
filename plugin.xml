@@ -54,6 +54,7 @@
             <source-file src="src/ios/AMapPlugin.m"/>
            
             <framework src="libs/ios/AMapLocationKit.framework" custom="true" />
+            <framework src="libs/ios/AMapSearchKit.framework" custom="true" />
             <!--<resource-file src="src/ios/AmapConfig.plist" />-->
             <framework src="CoreTelephony.framework" weak="true" />
             <framework src="SystemConfiguration.framework" weak="true" />
